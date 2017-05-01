@@ -8,28 +8,28 @@ As this simulation software was written using MMSP, it follows the conventions f
 
 There are two options for building the executable using the Makefile; sparse and bgq. Sparse uses a sparse representation of field data for execution on either singular or multiple processors in a generalized computing environment, while bgq includes libraries specifically required for building and operation of the code on the AMOS Blue Gene/Q system. Once the appropriate executable is created, it can be run using MMSP conventions such as:
 
-./sparse.out --example 2 split.00000.dat
+./sparse.out --example 2 planar.00000.dat
 
-This will tell the executable sparse.out to generate a 2-dimensional initial condition microstructure patterned on the "split" condition, and to output the data in an MMSP binary data file neamed split.00000.dat
+This will tell the executable sparse.out to generate a 2-dimensional initial condition microstructure patterned on the planar interface condition, and to output the data in an MMSP binary data file named planar.00000.dat
 
 The simulation can be run by executing the following command
 
-./sparse.out split.00000.dat 25000 250 
+./sparse.out planar.00000.dat 25000 250 
 
 which executes the physics modeled in the sp-xmpf.cpp file (from which sparse.out is built) on the microstructure specified in the MMSP binary data file split.00000.dat for 25,000 steps, outputing an MMSP binary data file representation of the microstructure every 250 steps.
 
 This will generate a list of files such as 
 
-split.00250.dat
-split.00500.dat
-split.00750.dat
-split.01000.dat
-split.01250.dat
+planar.00250.dat
+planar.00500.dat
+planar.00750.dat
+planar.01000.dat
+planar.01250.dat
 ...
 
 This process may be sped up by taking advantage of the Message Passing Interface (MPI) which is natively supported by MMSP and properly handled in the coding of sp-xmpf.cpp to allow multiprocessing optimization such as on Ridcully. Thi can be done by executing a command like
 
-mpirun -np 8 ./sparse.out split.00000.dat 25000 250
+mpirun -np 8 ./sparse.out planar.00000.dat 25000 250
 
 This line performs the same operation as the initial execution line, but does so using MPI to run it on 8 processors. 
 

@@ -31,7 +31,7 @@ template <int dim> void makeCenterCircle(MMSP::grid<dim, store_type >& grid, flo
 		float sum = 0;
 		for (int i = 0; i < dim; i++)
 			sum += pow( ((x[i]-(g1(grid,i)-g0(grid,i)))/2.0), 2);
-		float distance = sqrt(sums);
+		float distance = sqrt(sum);
 		
 		bool inCircle = distance <= radius;
 		store_type newGrain;

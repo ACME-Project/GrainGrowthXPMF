@@ -25,8 +25,8 @@ core = $(incdir)/MMSP.main.hpp \
        $(utildir)/tessellate.hpp
 
 # the program
-sparse.out: sp-xpfm.cpp $(core)
-	$(pcompiler) $(flags) -include mpi.h $< -o $@ -lz
+sparse: sp-xmpf.cpp $(core)
+	$(pcompiler) $(flags) -include mpi.h $< -o sparse.out -lz
 
 bgq: sp-xpfm.cpp $(core)
 	$(qcompiler) -DBGQ $(qflags) $< -o q_GG.out -lz

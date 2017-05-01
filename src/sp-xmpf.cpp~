@@ -41,6 +41,7 @@ void generate(int dim, char* filename) {
 	bool circle = (search_name.find("circle") != std::string::npos);
 	bool generated = (search_name.find("file") != std::string::npos);
 	
+	std::cout<<"start"<<std::endl;
 	int nx = 100;
 	int ny = 100;
 	int num_grains = 2;
@@ -61,6 +62,7 @@ void generate(int dim, char* filename) {
 			dimensions.push_back(0);
 		}
 	}
+	std::cout<<"middle"<<std::endl;
 
 	if(planar){
 		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
@@ -105,7 +107,7 @@ void generate(int dim, char* filename) {
 		std::cerr<<"Error: No initialization condition selected."<<std::endl;
 		exit(1);
 	}
-	
+	std::cout<<"end"<<std::endl;
 }
 
 template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
