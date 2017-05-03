@@ -2,6 +2,16 @@ README.txt
 
 This file will explain the use of the Toth XMPF as encoded by David Crist in C++ using the Mesoscale Microstructure Simulation Package (MMSP).
 
+--- 0. MMSP Installation ---
+
+Download MMSP from its central github repository, https://github.com/mesoscale/mmsp
+
+Navigate to mmsp/utility/ and build all the utility files by utilizing the Makefile.
+
+Add a line to your ~/.bashrc file defining a new system variable $MMSP_PATH by adding an export line to the file, inserting the appropriate directory where MMSP is stored.
+
+export MMSP_PATH=/home/user_name/direcctory/mmsp
+
 --- 1. General Use ---
 
 As this simulation software was written using MMSP, it follows the conventions for generation and execution prescribed by MMSP.
