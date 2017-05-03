@@ -1,0 +1,10 @@
+EXAMPLE.txt
+
+This file contains all the terminal commands that were used to generate the data found in the example/ directory, in order of execution
+
+
+./sparse.out --example 2 filex500x250x375.0000.dat
+mv filex500x250x375.0000.dat file.0000.dat
+./sparse.out file.0000.dat 2000 100
+mkdir output
+for f in file.*; do ./tool $f output/; done
