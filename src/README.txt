@@ -1,5 +1,17 @@
 README.txt
 
+--- 0. Dependencies ---
+
+This makefile directly depends on the following packages : (unless otherwise specified, the packages are common for both ubuntu and debian) :
+
+c compiler : g++
+p compiler : libopenmpi-dev , openmpi-common  
+q compiler : Load the xl module after logging into q . (module load xl)
+
+If the error messages still persist,  do a sudo apt-get update and then try make.
+
+
+
 This file will explain the use of the Toth XMPF as encoded by David Crist in C++ using the Mesoscale Microstructure Simulation Package (MMSP).
 
 --- 1. General Use ---
