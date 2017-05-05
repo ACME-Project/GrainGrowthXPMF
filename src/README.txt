@@ -20,6 +20,20 @@ export MMSP_PATH=/home/user_name/direcctory/mmsp
 
 --- 0.B.  OpenMPI Installation ---
 
+You will need to install the packages for OpenMPI, an extensive
+library of Message Passing Interface protocols for parallel 
+processing.
+
+This can be installed on Debian by using 
+
+sudo apt-get install package
+
+for the following OpenMPI packages:
+openmpi-common
+openmpi-bin
+openmpi-doc
+libopenmpi-dev
+
 --- 1. General Use ---
 
 As this simulation software was written using MMSP, it follows the
@@ -118,7 +132,7 @@ in an sbatch file. The text of an example sbatch files is shown below:
 #SBATCH -o /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory/start_ex.log
 #SBATCH -D /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory
 
-#srun --unbuffered /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory/q_GG.out --example 2 /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory/file.00000.dat
+#srun --unbuffered /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory/q_sparse.out --example 2 /gpfs/u/home/GGST/GGSTcrdv/scratch/example/directory/file.00000.dat
 
 Make note to assign directories and files correctly, and to always
 output files into the ~/scratch/ directory on AMOS.
