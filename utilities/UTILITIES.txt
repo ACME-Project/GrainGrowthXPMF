@@ -1,0 +1,29 @@
+UTILITIES.txt
+
+This document describes the use of the different utility files included 
+in this package:
+
+grad_gen.py
+make_sbatch.py
+tool.cpp
+
+--- tool ---
+
+tool is a basic executable compiled with the Makefile that goes through 
+every node of an output MMSP binary grid data file and performs 
+calculations on that data. Tool is used here to calculate simply the
+total area of the grains, and could likewise be extended to caclulate 
+the total volume. Tool is also used here to generate a visualization 
+of the data directly to png by mapping its grain boundaries.
+
+Use for tool is:
+
+./tool file.15000.dat output_directory/
+
+which will execute tool on the output from file step number 15000 and 
+output the resulting data files to the output_directory/. These output
+fiels will be a .png grain boundary tracing and a .csv list of areas.
+
+--- grad_gen.py ---
+
+

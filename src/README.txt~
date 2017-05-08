@@ -1,5 +1,20 @@
 README.txt
 
+<<<<<<< HEAD
+--- 0. Dependencies ---
+
+This makefile directly depends on the following packages : (unless otherwise specified, the packages are common for both ubuntu and debian) :
+
+c compiler : g++
+p compiler : libopenmpi-dev , openmpi-common  
+q compiler : Load the xl module after logging into q . (module load xl)
+
+If the error messages still persist,  do a sudo apt-get update and then try make.
+
+
+
+This file will explain the use of the Toth XMPF as encoded by David Crist in C++ using the Mesoscale Microstructure Simulation Package (MMSP).
+=======
 This file will explain the use of the Toth XMPF as encoded by David
 Crist in C++ using the Mesoscale Microstructure Simulation Package
 (MMSP).
@@ -19,6 +34,21 @@ appropriate directory where MMSP is stored.
 export MMSP_PATH=/home/user_name/direcctory/mmsp
 
 --- 0.B.  OpenMPI Installation ---
+
+You will need to install the packages for OpenMPI, an extensive
+library of Message Passing Interface protocols for parallel 
+processing.
+
+This can be installed on Debian by using 
+
+sudo apt-get install package
+
+for the following OpenMPI packages:
+openmpi-common
+openmpi-bin
+openmpi-doc
+libopenmpi-dev
+>>>>>>> b3531ea6a7bebcb17c3e11f72abf406b5a207a28
 
 --- 1. General Use ---
 
