@@ -18,12 +18,14 @@
 typedef float phi_type;
 typedef MMSP::sparse<phi_type> store_type;
 
-//included after typedefs for proper variable types in the functions of the included files
-#include"sp-graingrowth.hpp" 
-#include"sp-initialize.cpp"
-
 std::vector<std::string> split(const std::string &text, char sep);
 void print_progress(const int step, const int steps, const int iterations);
+
+//included after typedefs for proper variable types in the functions of the included files
+#include "sp-graingrowth.hpp" 
+#include "sp-initialize.cpp"
+#include "tessellate.hpp"
+
 template <int dim> void makeSplit(MMSP::grid<dim, store_type >& grid);
 
 namespace MMSP {
@@ -35,17 +37,28 @@ void generate(int dim, char* filename) {
 //		 circle.000000.dat to generate a radially-symmetric grain-in-grain structure
 //		 filexXxYxZxN.000000.dat to read an appropriatelly generated sharp-interface input file 
 //			(dimensions X, Y, Z and with N grains eg filex100x100x15.000.dat for a grid of 100x100 with 15 grains)
+//		 gradxXxYxZxNxBxb.000000.dat to generate a Voronoi tessellated domain of dimensions X, Y, Z and N grain seeds dispersed in B bins with a bias of b more grains in each consecutive bin
+
+	int id=0;
+	#ifdef MPI_VERSION
+ 	id=MPI::COMM_WORLD.Get_rank();
+	#endif
 
 	std::string search_name(filename);
+	// search the filename for keywords to direct the initial condition generation routine
 	bool planar = (search_name.find("planar") != std::string::npos);
 	bool circle = (search_name.find("circle") != std::string::npos);
 	bool generated = (search_name.find("file") != std::string::npos);
+	bool grad = (search_name.find("grad") != std::string::npos);
 	
 	int nx = 100;
 	int ny = 100;
+	int nz = 100;
 	int num_grains = 2;
+	int bias = 0;
+	int num_bins = 0;
 	std::vector<int> dimensions;
-	if (generated){// determining the dimensions based off filename data
+	if (generated or grad){// determining the dimensions based off filename data
 		std::vector<std::string> splits = split(search_name, '.');
 		std::string name_root = splits[0]; //"filex#####x#####
 		std::vector<std::string> metadata = split(name_root, 'x');
@@ -53,8 +66,13 @@ void generate(int dim, char* filename) {
 			dimensions.push_back(std::atoi(metadata[i+1].c_str()));
 		}
 		num_grains = std::atoi(metadata[dim+1].c_str());
-		nx = dimensions[0];
-		ny = dimensions[1];
+		if (dim > 0) nx = dimensions[0];
+		if (dim > 1) ny = dimensions[1];
+		if (dim > 2) nz = dimensions[2];
+		if (grad){
+			num_bins = std::atoi(metadata[dim+2].c_str());
+			bias = std::atoi(metadata[dim+3].c_str());
+		}
 	}
 	else{
 		for (int i = 0; i < dim; i++){
@@ -63,43 +81,101 @@ void generate(int dim, char* filename) {
 	}
 
 	if(planar){
-		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
+		if (dim == 1){
+			MMSP::grid<1,store_type > grid (2,0,nx);
 	
-		MMSP::dx(grid, 0) = 1.0;//Lx/nx;
-		MMSP::dx(grid, 1) = 1.0;//Ly/ny;
-		std::cout << "Creating 2-grain planar interface."<<std::endl;
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			if (id == 0) std::cout << "Creating 2-grain planar interface."<<std::endl;
 		
-		makeSplit<2>(grid);
+			makeSplit<1>(grid);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		} else if (dim == 2){
+			MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
+	
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			
+			if (id == 0) std::cout << "Creating 2-grain planar interface."<<std::endl;
+			makeSplit<2>(grid);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		} else if (dim == 3){
+			MMSP::grid<3,store_type > grid (2,0,nx,0,ny,0,nz);
+	
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			if (id == 0) std::cout << "Creating 2-grain planar interface."<<std::endl;
 		
-		std::cout << "Saving..." << std::endl;
-		output(grid, filename); //write out initialized grid
-		std::cout << "Grid saved as " << filename << std::endl;
+			makeSplit<3>(grid);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		}
+		
 	} else if(circle){
+		if(dim == 3 or dim == 1) {
+			std::cerr<<"Error: Dimensionality not supported."<<std::endl;
+			exit(1);
+		}
+				
 		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
 	
 		MMSP::dx(grid, 0) = 1.0;
 		MMSP::dx(grid, 1) = 1.0;
-		std::cout << "Creating circular grain-in-grain test grid."<<std::endl;
+		if (id == 0) std::cout << "Creating circular grain-in-grain test grid."<<std::endl;
 		
 		float radius = 20;
 		makeCenterCircle<2>(grid, radius);
 		
-		std::cout << "Saving..." << std::endl;
+		if (id == 0) std::cout << "Saving..." << std::endl;
 		output(grid, filename); //write out initialized grid
-		std::cout << "Grid saved as " << filename << std::endl;
+		if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
 	} else if(generated){
+		if(dim == 3 or dim == 1) {
+			std::cerr<<"Error: Dimensionality not supported."<<std::endl;
+			exit(1);
+		}
+		
 		MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);
 	
 		MMSP::dx(grid, 0) = 1.0;//Lx/nx;
 		MMSP::dx(grid, 1) = 1.0;//Ly/ny;
 
-		std::cout << "Reading in generated microstructure."<<std::endl;
-		
+		if (id == 0) std::cout << "Reading in generated microstructure."<<std::endl;
+
 		treadin<2,store_type>(grid);
 		
-		std::cout << "Saving..." << std::endl;
+		if (id == 0) std::cout << "Saving..." << std::endl;
 		output(grid, filename); //write out initialized grid
-		std::cout << "Grid saved as " << filename << std::endl;
+		if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+	} else if(grad){
+		if (id == 0) std::cout << "Generating biased Voronoi tessellation."<<std::endl;	
+		//re-cast nx so that it is definitely integrally divisible by num_bins
+		nx = int(nx/num_bins)*num_bins;
+		if (dim == 1) {
+			MMSP::grid<1,store_type > grid (num_grains,0,nx);
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			tessellate<1,phi_type >(grid, num_grains, num_bins, bias);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		} else if (dim == 2) {
+			MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			tessellate<2,phi_type >(grid, num_grains, num_bins, bias);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		} else if (dim == 3) {
+			MMSP::grid<3,store_type > grid (num_grains,0,nx,0,ny,0,nz);
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			tessellate<3,phi_type >(grid, num_grains, num_bins, bias);
+			if (id == 0) std::cout << "Saving..." << std::endl;
+			output(grid, filename); //write out initialized grid
+			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
+		}
+		
 	}
 	else {
 		std::cerr<<"Error: No initialization condition selected."<<std::endl;
@@ -137,8 +213,7 @@ template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
 		
 		MMSP::grid<dim, store_type > update(grid);
 
-		for (int n = 0; n < nodes(grid); n++){		
-			int i = n;
+		for (int n = 0; n < nodes(grid); n++){
 			vector<int> x = position(grid, n);
 			
 			// determine nonzero fields within
