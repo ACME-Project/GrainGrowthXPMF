@@ -15,13 +15,14 @@
 #include<cassert>
 #include"MMSP.hpp"
 
-typedef float phi_type;
-typedef MMSP::sparse<phi_type> store_type;
+typedef float phi_type; 		// Note : This is used extensively in sp-initialize.cpp
+typedef MMSP::sparse<phi_type> store_type; // Note : This is used extensively in sp-initialize.cpp
 
 //included after typedefs for proper variable types in the functions of the included files
 #include"sp-graingrowth.hpp" 
 #include"sp-initialize.cpp"
 
+//Function declarations 
 std::vector<std::string> split(const std::string &text, char sep);
 void print_progress(const int step, const int steps, const int iterations);
 template <int dim> void makeSplit(MMSP::grid<dim, store_type >& grid);
@@ -37,20 +38,21 @@ void generate(int dim, char* filename) {
 //			(dimensions X, Y, Z and with N grains eg filex100x100x15.000.dat for a grid of 100x100 with 15 grains)
 
 	std::string search_name(filename);
+	// Check if the filename has each of the following phrases in them. string search function return npos if no matches are found. npos here refers to the end of file. 
 	bool planar = (search_name.find("planar") != std::string::npos);
 	bool circle = (search_name.find("circle") != std::string::npos);
 	bool generated = (search_name.find("file") != std::string::npos);
 	
-	int nx = 100;
+	int nx = 100;    //Default values of nx and ny for the two dimensions.
 	int ny = 100;
 	int num_grains = 2;
-	std::vector<int> dimensions;
+	std::vector<int> dimensions;	//Each component of dimensions stores the number of grid points in that dimension.
 	if (generated){// determining the dimensions based off filename data
 		std::vector<std::string> splits = split(search_name, '.');
 		std::string name_root = splits[0]; //"filex#####x#####
 		std::vector<std::string> metadata = split(name_root, 'x');
 		for (int i = 0; i < dim; i++){
-			dimensions.push_back(std::atoi(metadata[i+1].c_str()));
+			dimensions.push_back(std::atoi(metadata[i+1].c_str()));     //atoi interprets a string of numbers as integer values. c_str converts the std::string of C++ into a C string
 		}
 		num_grains = std::atoi(metadata[dim+1].c_str());
 		nx = dimensions[0];
@@ -58,37 +60,37 @@ void generate(int dim, char* filename) {
 	}
 	else{
 		for (int i = 0; i < dim; i++){
-			dimensions.push_back(0);
+			dimensions.push_back(0);   			
 		}
 	}
 
 	if(planar){
-		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
+		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);    //Define the MMSP grid. The first input parameter refers to the number of grains.
 	
-		MMSP::dx(grid, 0) = 1.0;//Lx/nx;
-		MMSP::dx(grid, 1) = 1.0;//Ly/ny;
+		MMSP::dx(grid, 0) = 1.0; //Lx/nx ; Thus, Lx = Ly = 100.0 ;
+		MMSP::dx(grid, 1) = 1.0; //Ly/ny;
 		std::cout << "Creating 2-grain planar interface."<<std::endl;
 		
 		makeSplit<2>(grid);
 		
-		std::cout << "Saving..." << std::endl;
-		output(grid, filename); //write out initialized grid
+		std::cout << "Saving..." << std::endl; 
+		output(grid, filename); //write out initialized grid 
 		std::cout << "Grid saved as " << filename << std::endl;
 	} else if(circle){
-		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
+		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);  //Define the MMSP grid. The first input parameter refers to the number of grains.
 	
 		MMSP::dx(grid, 0) = 1.0;
 		MMSP::dx(grid, 1) = 1.0;
 		std::cout << "Creating circular grain-in-grain test grid."<<std::endl;
 		
-		float radius = 20;
+		float radius = 20;   //Define the radius by default.
 		makeCenterCircle<2>(grid, radius);
 		
 		std::cout << "Saving..." << std::endl;
 		output(grid, filename); //write out initialized grid
 		std::cout << "Grid saved as " << filename << std::endl;
 	} else if(generated){
-		MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);
+		MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);  //Define the MMSP grid. The first input parameter refers to the number of grains.
 	
 		MMSP::dx(grid, 0) = 1.0;//Lx/nx;
 		MMSP::dx(grid, 1) = 1.0;//Ly/ny;
@@ -108,11 +110,11 @@ void generate(int dim, char* filename) {
 	
 }
 
-template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
-	float dx = MMSP::dx(grid, 0);
+template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {    //computation of the model 
+	float dx = MMSP::dx(grid, 0);   // functor
 	int id=0;
 	#ifdef MPI_VERSION
- 	id=MPI::COMM_WORLD.Get_rank();
+ 	id=MPI::COMM_WORLD.Get_rank();     
 	#endif
 	
 	//thresh is the minimum phi value imposed to minimize mathematical noise in fields
@@ -127,15 +129,15 @@ template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
 	
 // Spatially-varying simulation parameters calculated
 // Initialize vairiables
-	const int num_grains =  fields(grid);
+	const int num_grains =  fields(grid); 	//functor
 	
 	static int iterations = 1;
 	
 	for (int step = 0; step < steps; step++) {
 		if(id == 0)	print_progress(step, steps, iterations);
-		ghostswap(grid);
+		ghostswap(grid);    //exchange of information 
 		
-		MMSP::grid<dim, store_type > update(grid);
+		MMSP::grid<dim, store_type > update(grid);	// ?? Potential for improvement : lots of duplications which deter easy understanding of MMSP
 
 		for (int n = 0; n < nodes(grid); n++){		
 			int i = n;

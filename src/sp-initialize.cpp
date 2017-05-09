@@ -9,21 +9,44 @@
 #include "MersenneTwister.h"
 
 template<int dim, typename T>
-void treadin(MMSP::grid<dim, store_type >& grid);
+void treadin(MMSP::grid<dim, store_type >& grid);   
 
+/*
+
+
+There are two classes of MMSP used by this program, the sparse class and the grid class. The sparse class defines the data structure that
+will store the list of the phase field variables and their respective values. The grid class represents the simulation domain's grid (or the portion of the grid computed
+by the processor). Both the classes have an attribute named data. While the sparse class's data is an array of struct objects, each having an index and a value, the grid
+class's data is an array of sparse objects. The former array's size is equal to the number of phase field variables, while the latter array's is equal to the number of cells. 
+
+*/
+
+//makeSplit - Initializes the microstructure into two grains and the initial interface is at 1/2 the distance of the 1st dimension.
 template <int dim> void makeSplit(MMSP::grid<dim, store_type >& grid) {
-	for(int n = 0; n < nodes(grid); n++){
-		MMSP::vector<int> x = position(grid, n);
+	for(int n = 0; n < nodes(grid); n++){    //nodes(grid) returns the number of nodes in that grid. 
+		MMSP::vector<int> x = position(grid, n);   //vector x has number of components equal to the number of dimensions, position(grid, n) returns the n coordinates 
+												   //corresponding to the n-dimensions , at the node n of the grid 'grid'. x[0] thus corresponds to the coordinate of the dimension 0, 
+												   //and x1(grid) would correspond to the length of the grid in dimension no.1 
 		store_type newGrain;
-		if (x[0] < (x1(grid)/2)){ //if on the left side of the grid
+		if (x[0] < (x1(grid)/2))
+		{ //if on the left side of the grid
 			set(newGrain, 1) = 1.0;
+			/*set() is a member function of the sparse class.  There is a template defined as follows : 
+template <int ind, typename T> T& set(const target<0, ind, sparse<T> >& s, int index) {	return s.set(index);} . Thus, set(newGrain, index) is equivalent to newGrain.set(index). This
+function updates the data variable of the sparse object newGrain and appends the index to the list of phase field variables. It then returns the address for the value instance of that
+data array member, to which we write the requisite value. */
 		}
 		else{ //else on the right side of the grid
 			set(newGrain, 0) = 1.0;
 		}
 		grid(n) = newGrain;
+		/* grid(n) , returns the address for the sparse data structure associated with the node n of the grid, to which we write our computed sparse variable. grid(n) is a typical 
+		example of a functor. */
 	}
 }
+
+/*makeCenterCircle initializes a circular nucleus, with the center being the center of the grid. I believe that g1 and g0 represent the coordinates of the two extremes of the grid, for 
+each dimension. */
 
 template <int dim> void makeCenterCircle(MMSP::grid<dim, store_type >& grid, float radius) {
 	for(int n = 0; n < nodes(grid); n++){
@@ -44,6 +67,17 @@ template <int dim> void makeCenterCircle(MMSP::grid<dim, store_type >& grid, flo
 		grid(n) = newGrain;
 	}
 }
+
+/*
+
+NOTES ABOUT THE TREADIN FUNCTION
+
+The nodes of the MMSP grid and those of the input file should be identical. At the least, the number of nodes need to be the same.
+
+Since grain_list contain the grain ids in the order of the aapearance in the input dat file, the id map of the reconstructed microstructure is different from the id_map of the input 
+microstructure.
+
+*/
 
 // Sparse fielding function to import a microstructure from a grain-ID indexed matrix
 // currently only supported for 2D
