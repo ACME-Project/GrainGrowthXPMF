@@ -1,0 +1,70 @@
+UTILITIES.txt
+
+This document describes the use of the different utility files included 
+in this package:
+
+tool.cpp
+make_sbatch.py
+grad_gen.py
+
+--- tool ---
+
+tool is a basic executable compiled with the Makefile that goes through 
+every node of an output MMSP binary grid data file and performs 
+calculations on that data. Tool is used here to calculate simply the
+total area of the grains, and could likewise be extended to caclulate 
+the total volume. Tool is also used here to generate a visualization 
+of the data directly to png by mapping its grain boundaries.
+
+Use for tool is:
+
+./tool file.15000.dat output_directory/
+
+which will execute tool on the output from file step number 15000 and 
+output the resulting data files to the output_directory/. These output
+fiels will be a .png grain boundary tracing and a .csv list of areas.
+
+--- make_sbatch.py ---
+
+This script is relatively straightforward. It goes through a directory 
+structure of /root/trunk/leaf and executes the script over leaf. 
+
+Use for make_sbatch.py follows the example below: 
+
+python make_sbatch.py /gpfs/u/home/GGST/GGSTcrdv/scratch/experiment_set/ exp_*
+
+Which would generate two files to execute the simulations stored in the
+target directory: start.sh and sbatch.sh.
+
+Executing sbatch start.sh sends a job request for the microstructure 
+initialization phase to the SLURM job manager.
+
+Executing start.sh does the same but for the subsequent simulation.
+
+Parameters for number of nodes and such are constants in the script.
+
+--- grad_gen.py ---
+
+grad_gen.py is executed in a very straightforward manner by simply
+
+python grad_gen.py
+
+The variables and the algorithm that generates microstructures are
+described in my thesis documentation, but a quick recap is that 
+grains are distributed into discrete chunks of the microstructure
+domain known as bins. If each bin gets the same number of seeds, a
+homogeneous grain size distribution emerges. Grain size gradients are
+introduced by adding a bias amount to each successive bin, increasing
+the seed density on one side of the microstructure domain. 
+
+Variables of the algorithm include edge lengths X and Y and the number
+of bins B, the bias b, and number of total grains N.
+
+A Voronoi tessellation is then performed on the binned seeds, and 
+the resulting micrsotructure is output in two files:
+XxYxN_init.png 
+XxYxN.txt
+which hold, respectively, the initial generated microstructure as
+visualized via grain ID in a png format image, and a .txt list file of
+the grain ID defined at every point in the initial sharp-interface
+generated microstructure.

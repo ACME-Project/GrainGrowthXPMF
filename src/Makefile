@@ -6,8 +6,7 @@ utildir = $(MMSP_PATH)/utility
 algodir = $(MMSP_PATH)/algorithms
 
 # compilers/flags
-compiler = g++ -O3 -Wall
-pcompiler = mpic++ -O3 -Wall
+pcompiler = mpic++ -O3
 flags = -I$(incdir) -I$(algodir) -I$(utildir)
 
 # IBM compiler for AMOS
@@ -28,7 +27,7 @@ sparse: sp-xmpf.cpp $(core)
 	$(pcompiler) $(flags) -include mpi.h $< -o sparse.out -lz
 
 bgq: sp-xmpf.cpp $(core)
-	$(qcompiler) -DBGQ $(qflags) $< -o q_GG.out -lz
+	$(qcompiler) -DBGQ $(qflags) $< -o q_sparse.out -lz
 
 clean:
-	rm -rf q_GG.out sparse.out
+	rm -rf q_GG.out sparse.out *~
