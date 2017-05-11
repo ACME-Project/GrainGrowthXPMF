@@ -93,6 +93,7 @@ viewer_field = CellVariable(name='Grain-ID', mesh=mesh)
 viewer_field.value = 0.0
 for n in range(grains):
     viewer_field.value += (phi_field[n] > 0.99)*(n+1)
-outputname = str(nx) + 'x' + str(ny) + '_init'
+outputname = str(nx) + 'x' + str(ny) + 'x' + str(grains) 
 viewer = Matplotlib2DViewer(vars=viewer_field)
-viewer.plot(filename=outputname + '.png')
+viewer.plot(filename=outputname + '_init.png')
+TSVViewer(vars=phi_field).plot(filename=outputname + '.txt')
