@@ -15,9 +15,14 @@
 #include<cassert>
 #include"MMSP.hpp"
 
-typedef float phi_type;
-typedef MMSP::sparse<phi_type> store_type;
+typedef float phi_type; 		// Note : This is used extensively in sp-initialize.cpp
+typedef MMSP::sparse<phi_type> store_type; // Note : This is used extensively in sp-initialize.cpp
 
+//included after typedefs for proper variable types in the functions of the included files
+#include"sp-graingrowth.hpp" 
+#include"sp-initialize.cpp"
+
+//Function declarations 
 std::vector<std::string> split(const std::string &text, char sep);
 void print_progress(const int step, const int steps, const int iterations);
 
@@ -45,27 +50,34 @@ void generate(int dim, char* filename) {
 	#endif
 
 	std::string search_name(filename);
+
+	// Check if the filename has any of the following phrases. The string search function returns npos if no matches are found. npos, in this context, refers to the end of file. 
 	// search the filename for keywords to direct the initial condition generation routine
 	bool planar = (search_name.find("planar") != std::string::npos);
 	bool circle = (search_name.find("circle") != std::string::npos);
 	bool generated = (search_name.find("file") != std::string::npos);
 	bool grad = (search_name.find("grad") != std::string::npos);
 	
-	int nx = 100;
+	int nx = 100;    //Default values of nx,ny, and nz.
 	int ny = 100;
 	int nz = 100;
 	int num_grains = 2;
+
+	std::vector<int> dimensions;	//Each component of dimensions stores the number of grid points in that dimension.
+	if (generated){// determining the dimensions based off filename data
+
 	int bias = 0;
 	int num_bins = 0;
 	std::vector<int> dimensions;
 	if (generated or grad){// determining the dimensions based off filename data
+
 		std::vector<std::string> splits = split(search_name, '.');
 		std::string name_root = splits[0]; //"filex#####x#####
-		std::vector<std::string> metadata = split(name_root, 'x');
+		std::vector<std::string> metadata = split(name_root, 'x'); //This splits creates individual strings in the title separated by x. metadata contains nx, ny, nz, number of grains and the bias. 
 		for (int i = 0; i < dim; i++){
-			dimensions.push_back(std::atoi(metadata[i+1].c_str()));
+			dimensions.push_back(std::atoi(metadata[i+1].c_str()));     //atoi interprets a string of numbers as integer values. c_str converts the std::string of C++ into a C string.
 		}
-		num_grains = std::atoi(metadata[dim+1].c_str());
+		num_grains = std::atoi(metadata[dim+1].c_str());  
 		if (dim > 0) nx = dimensions[0];
 		if (dim > 1) ny = dimensions[1];
 		if (dim > 2) nz = dimensions[2];
@@ -76,16 +88,18 @@ void generate(int dim, char* filename) {
 	}
 	else{
 		for (int i = 0; i < dim; i++){
-			dimensions.push_back(0);
+			dimensions.push_back(0);   			
 		}
 	}
 
 	if(planar){
+
 		if (dim == 1){
-			MMSP::grid<1,store_type > grid (2,0,nx);
+			MMSP::grid<1,store_type > grid (2,0,nx); //Define the MMSP grid. The first input parameter refers to the number of grains.
 	
-			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0;
+			for (int d = 0; d < dim; d++) MMSP::dx(grid, d) = 1.0; //Lx/nx ; Thus, Lx = Ly = 100.0 ;
 			if (id == 0) std::cout << "Creating 2-grain planar interface."<<std::endl;
+
 		
 			makeSplit<1>(grid);
 			if (id == 0) std::cout << "Saving..." << std::endl;
@@ -113,31 +127,42 @@ void generate(int dim, char* filename) {
 			if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
 		}
 		
-	} else if(circle){
+
+		std::cout << "Saving..." << std::endl; 
+		output(grid, filename); //write out initialized grid 
+		std::cout << "Grid saved as " << filename << std::endl;
+	} 
+
+	        else if(circle){
 		if(dim == 3 or dim == 1) {
 			std::cerr<<"Error: Dimensionality not supported."<<std::endl;
 			exit(1);
 		}
 				
 		MMSP::grid<2,store_type > grid (2,0,nx,0,ny);
+
 	
 		MMSP::dx(grid, 0) = 1.0;
 		MMSP::dx(grid, 1) = 1.0;
 		if (id == 0) std::cout << "Creating circular grain-in-grain test grid."<<std::endl;
 		
-		float radius = 20;
+		float radius = 20;   //Define the radius by default.
 		makeCenterCircle<2>(grid, radius);
 		
 		if (id == 0) std::cout << "Saving..." << std::endl;
 		output(grid, filename); //write out initialized grid
 		if (id == 0) std::cout << "Grid saved as " << filename << std::endl;
 	} else if(generated){
+
+		MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);  //Define the MMSP grid. The first input parameter refers to the number of grains.
+
 		if(dim == 3 or dim == 1) {
 			std::cerr<<"Error: Dimensionality not supported."<<std::endl;
 			exit(1);
 		}
 		
 		MMSP::grid<2,store_type > grid (num_grains,0,nx,0,ny);
+
 	
 		MMSP::dx(grid, 0) = 1.0;//Lx/nx;
 		MMSP::dx(grid, 1) = 1.0;//Ly/ny;
@@ -184,11 +209,11 @@ void generate(int dim, char* filename) {
 	
 }
 
-template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
-	float dx = MMSP::dx(grid, 0);
+template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {    //computation of the model 
+	float dx = MMSP::dx(grid, 0);   // functor
 	int id=0;
 	#ifdef MPI_VERSION
- 	id=MPI::COMM_WORLD.Get_rank();
+ 	id=MPI::COMM_WORLD.Get_rank();     
 	#endif
 	
 	//thresh is the minimum phi value imposed to minimize mathematical noise in fields
@@ -203,18 +228,18 @@ template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
 	
 // Spatially-varying simulation parameters calculated
 // Initialize vairiables
-	const int num_grains =  fields(grid);
+	const int num_grains =  fields(grid); 	//functor
 	
 	static int iterations = 1;
 	
 	for (int step = 0; step < steps; step++) {
 		if(id == 0)	print_progress(step, steps, iterations);
-		ghostswap(grid);
+		ghostswap(grid);    //exchange of information 
 		
-		MMSP::grid<dim, store_type > update(grid);
+		MMSP::grid<dim, store_type > update(grid);	// A new MMSP grid is defined by the name of update, to which the original grid is passed as initialization parameter. This is equivalent to creating a copy of the original grid. Potential for improvement : lots of duplications which deter easy understanding of MMSP
 
 		for (int n = 0; n < nodes(grid); n++){
-			vector<int> x = position(grid, n);
+			vector<int> x = position(grid, n);  //position() returns a vector of coordinates at the nth node 
 			
 			// determine nonzero fields within
 			// the neighborhood of this node
@@ -223,57 +248,57 @@ template <int dim> void update(MMSP::grid<dim, store_type >& grid, int steps) {
 			for (int j = 0; j < dim; j++){
 				for (int k = -1; k <= 1; k++) {
 				  x[j] += k;
-				  for (int h = 0; h < length(grid(x)); h++) {
-				    int index = MMSP::index(grid(x), h);
-				    set(s, index) = 1;
+				  for (int h = 0; h < length(grid(x)); h++) {   //grid(x) is similar to grid(n), and returns a sparse variable associated with x (operator() is defined in grid for both int and vector<int>). length(sparse s) - s.length() - returns the size of s.
+				    int index = MMSP::index(grid(x), h) ; //functor - computes grid(x).index(h).  Remember, grid(x) is a sparse variable here. Returns data[h].index associated with the sparse returned by grid(x).
+				    set(s, index) = 1;	
 				  }
-				  x[j] -= k;
+				  x[j] -= k;	// To get x[j] back to the original value. Could be made more clear by defining a temp variable
 				}
 			}
-			phi_type S = phi_type(length(s));
+			phi_type S = phi_type(length(s));  // ~ float(s.length())
 
 			// if only one field is nonzero,
 			// then copy this node to update
 			if (S < 2.0){
-				update(n) = grid(n);
+				update(n) = grid(n);	//This node is copied to the new grid, 'update'.
 			} else {
 				// compute laplacian of each field
-				sparse<phi_type> lap = laplacian(grid, n);
+				sparse<phi_type> lap = laplacian(grid, n); 
 				
 				sparse<phi_type> dFdp;
 
-				for (int h = 0; h < length(s); h++) {
+				for (int h = 0; h < length(s); h++) {	
 					// compute variational derivatives
-					int hindex = MMSP::index(s, h);
-					phi_type N = num_grains;
+					int hindex = MMSP::index(s, h);   
+					phi_type N = num_grains;     // Why is the number of grains initialized as a float, when int can solve the purpose?
 					
 					phi_type phi_sq = 0.0; // phi_sq is the sum of the squares of the phi field
 					phi_type dFall = 0.0;
 					
 					// Compute phi_sq value by taking the sum of all (defined) phi values
 					for (int j = 0; j < length(s); j++) {
-						int jindex = MMSP::index(s, j);
+						int jindex = MMSP::index(s, j);	
 						phi_sq += grid(n)[jindex]*grid(n)[jindex];
 					}
 					
 					// Compute the dFall value by calculating all (defined) dFdp values and summing them
 					for (int j = 0; j < length(s); j++) {
-						int jindex = MMSP::index(s, j);
+						int jindex = MMSP::index(s, j);  
 						set(dFdp, jindex) = w * grid(n)[jindex] * (phi_sq - grid(n)[jindex]) - eps_sq * (lap[jindex]);
 						dFall += dFdp[jindex];
 					}
 					
 					store_type dpdt;
 					set(dpdt, hindex) = - (M/N) * (N*dFdp[hindex] - dFall);
-					phi_type value = grid(n)[hindex] + dt * dpdt[hindex];
+					phi_type value = grid(n)[hindex] + dt * dpdt[hindex];	// grid(n)[hindex] refers to the hindex of the sparse variable returned by grid(n)
 					if (value > 1.0) value = 1.0;
 					if (value < -0.001) value = 0.0;
-					if (value > thresh) set(update(n), hindex) = value;
+					if (value > thresh) set(update(n), hindex) = value;	
 					else if (grid(n)[hindex] != 0.0) set(update(n), hindex) = 0.0;
 				}//calculate interactions between interacting fields
 			}//perform calculations on non-zero fields
 		} //loop over nodes		
-		swap(grid, update);
+		swap(grid, update);	//update is copied to grid.
 	} //loop over steps
 	ghostswap(grid);
 	++iterations;
